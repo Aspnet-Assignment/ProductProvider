@@ -6,36 +6,52 @@ using Newtonsoft.Json;
 using ProductProvider.Contexts;
 using ProductProvider.Entities;
 
-namespace ProductProvider.Functions.ProductHandler;
-
-public class CreateProduct
+namespace ProductProvider.Functions.ProductHandler
 {
-    private readonly ILogger<CreateProduct> _logger;
-    private readonly DataContext _context;
-
-    public CreateProduct(ILogger<CreateProduct> logger, DataContext context)
+    public class CreateProduct
     {
-        _logger = logger;
-        _context = context;
-    }
+        private readonly ILogger<CreateProduct> _logger;
+        private readonly DataContext _context;
 
-    [Function("CreateProduct")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequest req)
-    {
-        try
+        public CreateProduct(ILogger<CreateProduct> logger, DataContext context)
         {
-            var body = await new StreamReader(req.Body).ReadToEndAsync();
-            var entity = JsonConvert.DeserializeObject<Product>(body);
-
-            _context.Add(entity);
-            await _context.SaveChangesAsync();
-
-            return new OkResult();
+            _logger = logger;
+            _context = context;
         }
-        catch (Exception ex)
+
+        [Function("CreateProduct")]
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
         {
-            _logger.LogError(ex, ex.Message);
-            return new BadRequestResult();
+            _logger.LogInformation("CreateProduct function started.");
+
+            try
+            {
+                var body = await new StreamReader(req.Body).ReadToEndAsync();
+                _logger.LogInformation("Request body read successfully.");
+
+                var entity = JsonConvert.DeserializeObject<Product>(body);
+                if (entity == null)
+                {
+                    _logger.LogWarning("Failed to deserialize request body to Product.");
+                    return new BadRequestObjectResult("Invalid product data.");
+                }
+
+                _context.Add(entity);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Product saved successfully.");
+
+                return new OkResult();
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Error deserializing request body.");
+                return new BadRequestObjectResult("Invalid JSON format.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while creating the product.");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
         }
     }
 }

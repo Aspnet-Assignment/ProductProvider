@@ -19,7 +19,7 @@ public class UpdateCategoryById
         _context = context;
     }
 
-    [Function("UpdateProductById")]
+    [Function("UpdateCategoryById")]
     public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "put", Route = "categories/{id}")] HttpRequest req, string id)
     {
         var existingItem = await _context.Categories.FindAsync(id);
