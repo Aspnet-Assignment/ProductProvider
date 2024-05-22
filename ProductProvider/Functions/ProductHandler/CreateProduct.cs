@@ -27,7 +27,7 @@ namespace ProductProvider.Functions.ProductHandler
             try
             {
                 var body = await new StreamReader(req.Body).ReadToEndAsync();
-                _logger.LogInformation("Request body read successfully.");
+                _logger.LogInformation("Request body read successfully: {Body}", body);
 
                 var entity = JsonConvert.DeserializeObject<Product>(body);
                 if (entity == null)
@@ -38,9 +38,9 @@ namespace ProductProvider.Functions.ProductHandler
 
                 _context.Add(entity);
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("Product saved successfully.");
+                _logger.LogInformation("Product saved successfully: {Product}", entity);
 
-                return new OkResult();
+                return new OkObjectResult(entity);
             }
             catch (JsonException ex)
             {
