@@ -19,7 +19,7 @@ public class GetAllColors
     }
 
     [Function("GetAllColors")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", Route = "colors/all")] HttpRequest req)
+    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "colors/all")] HttpRequest req)
     {
         try
         {

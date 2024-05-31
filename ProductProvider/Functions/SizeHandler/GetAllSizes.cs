@@ -19,7 +19,7 @@ public class GetAllSizes
     }
 
     [Function("GetAllSizes")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", Route = "sizes/all")] HttpRequest req)
+    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sizes/all")] HttpRequest req)
     {
         try
         {

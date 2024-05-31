@@ -5,31 +5,32 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ProductProvider.Contexts;
 
-namespace ProductProvider.Functions.ProductHandler;
-
-public class GetAllProducts
+namespace ProductProvider.Functions.ProductHandler
 {
-    private readonly ILogger<GetAllProducts> _logger;
-    private readonly DataContext _context;
-
-    public GetAllProducts(ILogger<GetAllProducts> logger, DataContext context)
+    public class GetAllProducts
     {
-        _logger = logger;
-        _context = context;
-    }
+        private readonly ILogger<GetAllProducts> _logger;
+        private readonly DataContext _context;
 
-    [Function("GetAllProducts")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", Route = "products/all")] HttpRequest req)
-    {
-        try
+        public GetAllProducts(ILogger<GetAllProducts> logger, DataContext context)
         {
-            var items = await _context.Products.ToListAsync();
-            return new OkObjectResult(items);
+            _logger = logger;
+            _context = context;
         }
-        catch (Exception ex)
+
+        [Function("GetAllProducts")]
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "products/all")] HttpRequest req)
         {
-            _logger.LogError(ex, ex.Message);
-            return new NotFoundResult();
+            try
+            {
+                var items = await _context.Products.ToListAsync();
+                return new OkObjectResult(items);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving the products.");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
         }
     }
 }

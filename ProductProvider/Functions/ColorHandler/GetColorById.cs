@@ -19,7 +19,7 @@ public class GetColorById
     }
 
     [Function("GetColorById")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", Route = "colors/{id}")] HttpRequest req, string id)
+    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "colors/{id}")] HttpRequest req, string id)
     {
         try
         {

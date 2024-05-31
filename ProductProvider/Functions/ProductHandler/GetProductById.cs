@@ -18,7 +18,7 @@ public class GetProductById
     }
 
     [Function("GetProductById")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", Route = "products/{id}")] HttpRequest req, string id)
+    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "products/{id}")] HttpRequest req, string id)
     {
         try
         {

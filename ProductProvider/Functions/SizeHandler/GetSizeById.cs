@@ -18,17 +18,16 @@ public class GetSizeById
     }
 
     [Function("GetSizeById")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", Route = "sizes/{id}")] HttpRequest req, string id)
+    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "sizes/{id}")] HttpRequest req, string id)
     {
         try
         {
-            var item = await _context.Colors.FindAsync(id);
+            var item = await _context.Sizes.FindAsync(id);
             if (item == null)
             {
                 return new NotFoundResult();
             }
             return new OkObjectResult(item);
-
         }
         catch (Exception ex)
         {

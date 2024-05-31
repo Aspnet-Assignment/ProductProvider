@@ -4,39 +4,40 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using ProductProvider.Contexts;
 
-namespace ProductProvider.Functions.ProductHandler;
-
-public class DeleteProductById
+namespace ProductProvider.Functions.ProductHandler
 {
-    private readonly ILogger<DeleteProductById> _logger;
-    private readonly DataContext _context;
-
-    public DeleteProductById(ILogger<DeleteProductById> logger, DataContext context)
+    public class DeleteProductById
     {
-        _logger = logger;
-        _context = context;
-    }
+        private readonly ILogger<DeleteProductById> _logger;
+        private readonly DataContext _context;
 
-    [Function("DeleteProductById")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "delete", Route = "products/{id}")] HttpRequest req, string id)
-    {
-        try
+        public DeleteProductById(ILogger<DeleteProductById> logger, DataContext context)
         {
-            var item = await _context.Products.FindAsync(id);
-            if (item == null)
-            {
-                return new NotFoundResult();
-            }
-
-            _context.Products.Remove(item);
-            await _context.SaveChangesAsync();
-
-            return new OkResult();
+            _logger = logger;
+            _context = context;
         }
-        catch (Exception ex)
+
+        [Function("DeleteProductById")]
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "products/{id}")] HttpRequest req, string id)
         {
-            _logger.LogError(ex, ex.Message);
-            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            try
+            {
+                var item = await _context.Products.FindAsync(id);
+                if (item == null)
+                {
+                    return new NotFoundResult();
+                }
+
+                _context.Products.Remove(item);
+                await _context.SaveChangesAsync();
+
+                return new OkResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while deleting the product.");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
         }
     }
 }

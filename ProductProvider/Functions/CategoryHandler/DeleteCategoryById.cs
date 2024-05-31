@@ -18,7 +18,7 @@ public class DeleteCategoryById
     }
 
     [Function("DeleteCategoryById")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "delete", Route = "categories/{id}")] HttpRequest req, string id)
+    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "categories/{id}")] HttpRequest req, string id)
     {
         try
         {

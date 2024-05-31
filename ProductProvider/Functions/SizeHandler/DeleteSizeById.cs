@@ -18,17 +18,17 @@ public class DeleteSizeById
     }
 
     [Function("DeleteSizeById")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "delete", Route = "sizes/{id}")] HttpRequest req, string id)
+    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "sizes/{id}")] HttpRequest req, string id)
     {
         try
         {
-            var item = await _context.Colors.FindAsync(id);
+            var item = await _context.Sizes.FindAsync(id);
             if (item == null)
             {
                 return new NotFoundResult();
             }
 
-            _context.Colors.Remove(item);
+            _context.Sizes.Remove(item);
             await _context.SaveChangesAsync();
 
             return new OkResult();

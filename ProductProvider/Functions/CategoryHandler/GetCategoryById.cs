@@ -18,7 +18,7 @@ public class GetCategoryById
     }
 
     [Function("GetCategoryById")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", Route = "categories/{id}")] HttpRequest req, string id)
+    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "categories/{id}")] HttpRequest req, string id)
     {
         try
         {

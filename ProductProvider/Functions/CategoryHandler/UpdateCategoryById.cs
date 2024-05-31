@@ -2,44 +2,64 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using ProductProvider.Contexts;
 using ProductProvider.Entities;
-using System.Text.Json;
 
-namespace ProductProvider.Functions.CategoryHandler;
-
-public class UpdateCategoryById
+namespace ProductProvider.Functions.CategoryHandler
 {
-    private readonly ILogger<UpdateCategoryById> _logger;
-    private readonly DataContext _context;
-
-    public UpdateCategoryById(ILogger<UpdateCategoryById> logger, DataContext context)
+    public class UpdateCategoryById
     {
-        _logger = logger;
-        _context = context;
-    }
+        private readonly ILogger<UpdateCategoryById> _logger;
+        private readonly DataContext _context;
 
-    [Function("UpdateCategoryById")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "put", Route = "categories/{id}")] HttpRequest req, string id)
-    {
-        var existingItem = await _context.Categories.FindAsync(id);
-        if (existingItem == null)
+        public UpdateCategoryById(ILogger<UpdateCategoryById> logger, DataContext context)
         {
-            return new NotFoundResult();
+            _logger = logger;
+            _context = context;
         }
 
-        string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-        var updatedItem = JsonSerializer.Deserialize<Category>(requestBody, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-
-        if (updatedItem == null)
+        [Function("UpdateCategoryById")]
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "categories/{id}")] HttpRequest req, string id)
         {
-            return new BadRequestResult();
+            _logger.LogInformation("UpdateCategoryById function started.");
+
+            try
+            {
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                _logger.LogInformation("Request body read successfully: {Body}", requestBody);
+
+                var updatedItem = JsonConvert.DeserializeObject<Category>(requestBody);
+                if (updatedItem == null)
+                {
+                    _logger.LogWarning("Failed to deserialize request body to Category.");
+                    return new BadRequestObjectResult("Invalid category data.");
+                }
+
+                var existingItem = await _context.Categories.FindAsync(id);
+                if (existingItem == null)
+                {
+                    return new NotFoundResult();
+                }
+
+                existingItem.CategoryName = updatedItem.CategoryName;
+
+                _context.Categories.Update(existingItem);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Category updated successfully: {Category}", existingItem);
+
+                return new OkObjectResult(existingItem);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Error deserializing request body.");
+                return new BadRequestObjectResult("Invalid JSON format.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while updating the category.");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
         }
-        existingItem.CategoryName = updatedItem.CategoryName;
-
-        _context.Categories.Update(existingItem);
-        await _context.SaveChangesAsync();
-
-        return new OkObjectResult(existingItem);
     }
 }

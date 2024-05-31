@@ -2,54 +2,64 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using ProductProvider.Contexts;
 using ProductProvider.Entities;
-using System.Text.Json;
 
-namespace ProductProvider.Functions.ColorHandler;
-
-public class UpdateColorById
+namespace ProductProvider.Functions.ColorHandler
 {
-    private readonly ILogger<UpdateColorById> _logger;
-    private readonly DataContext _context;
-
-    public UpdateColorById(ILogger<UpdateColorById> logger, DataContext context)
+    public class UpdateColorById
     {
-        _logger = logger;
-        _context = context;
-    }
+        private readonly ILogger<UpdateColorById> _logger;
+        private readonly DataContext _context;
 
-    [Function("UpdateColorById")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "put", Route = "colors/{id}")] HttpRequest req, string id)
-    {
-        try
+        public UpdateColorById(ILogger<UpdateColorById> logger, DataContext context)
         {
-            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var updatedItem = JsonSerializer.Deserialize<Color>(requestBody, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            if (updatedItem == null || updatedItem.Id != id)
-            {
-                return new BadRequestResult();
-            }
-
-            var existingItem = await _context.Colors.FindAsync(id);
-            if (existingItem == null)
-            {
-                return new NotFoundResult();
-            }
-
-            existingItem.ColorName = updatedItem.ColorName;
-
-
-
-            await _context.SaveChangesAsync();
-
-            return new OkObjectResult(existingItem);
+            _logger = logger;
+            _context = context;
         }
-        catch (Exception ex)
+
+        [Function("UpdateColorById")]
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "colors/{id}")] HttpRequest req, string id)
         {
-            _logger.LogError(ex, ex.Message);
-            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            _logger.LogInformation("UpdateColorById function started.");
+
+            try
+            {
+                var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                _logger.LogInformation("Request body read successfully: {Body}", requestBody);
+
+                var updatedItem = JsonConvert.DeserializeObject<Color>(requestBody);
+                if (updatedItem == null)
+                {
+                    _logger.LogWarning("Failed to deserialize request body to Color.");
+                    return new BadRequestObjectResult("Invalid color data.");
+                }
+
+                var existingItem = await _context.Colors.FindAsync(id);
+                if (existingItem == null)
+                {
+                    return new NotFoundResult();
+                }
+
+                existingItem.ColorName = updatedItem.ColorName;
+
+                _context.Colors.Update(existingItem);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Color updated successfully: {Color}", existingItem);
+
+                return new OkObjectResult(existingItem);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Error deserializing request body.");
+                return new BadRequestObjectResult("Invalid JSON format.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while updating the color.");
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
         }
     }
 }
